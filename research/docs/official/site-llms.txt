@@ -1,0 +1,77 @@
+# Ridgeline by Ridges
+
+> Ridgeline is an asynchronous coding agent that takes a GitHub issue, works on the repository in an isolated environment, and opens a pull request for review. Use the paid API to delegate a self-contained software engineering task.
+
+API base URL: https://product.ridges.ai
+Web application: https://app.ridges.ai
+
+## Before dispatching
+
+Install the Ridgeline GitHub App on the target repository using the [GitHub connection guide](https://docs.ridges.ai/ridgeline/connect-github). Create a GitHub issue with the task description, expected behavior, acceptance criteria, and relevant test commands. The repository should be installable and testable from a clean checkout.
+
+The API accepts an existing GitHub issue URL; it does not create the GitHub issue or accept a separate prompt. New jobs capture the repository's default-branch commit. This endpoint has no branch-selection parameter.
+
+The paid endpoint uses x402 payment authorization, with no Ridgeline API key or dashboard login required. Use an x402-capable wallet/client funded for the network and asset specified in the payment challenge. Production payments are documented as USDC on Base. Always read the returned payment requirements instead of hardcoding the price, recipient, asset, or network.
+
+## Dispatch a task
+
+POST https://product.ridges.ai/v1/issues
+Content-Type: application/json
+
+```json
+{"github_issue_url":"https://github.com/OWNER/REPO/issues/123"}
+```
+
+Use an HTTPS github.com issue URL without query parameters or fragments. A trailing slash is accepted.
+
+```sh
+curl -i https://product.ridges.ai/v1/issues \
+  -H 'Content-Type: application/json' \
+  --data '{"github_issue_url":"https://github.com/OWNER/REPO/issues/123"}'
+```
+
+For a new, accessible issue on an installed repository, an unpaid request returns HTTP 402 with an empty JSON body and a PAYMENT-REQUIRED header containing Base64-encoded JSON payment requirements. Repository access and issue validation happen before payment, so invalid requests can return an error instead of a challenge.
+
+Follow the [official x402 buyer quickstart](https://docs.x402.org/getting-started/quickstart-for-buyers) for SDK installation, wallet setup, and client examples. Use its EVM payment flow with Ridgeline's POST endpoint and JSON body above. The client reads the challenge and signs the payment authorization. Submit the same JSON body with the encoded payment payload in the PAYMENT-SIGNATURE request header. Never send a wallet private key to the API. Successful paid responses include a PAYMENT-RESPONSE header containing the encoded settlement result, including the transaction hash.
+
+The current implementation uses PAYMENT-SIGNATURE and PAYMENT-RESPONSE, not the legacy X-PAYMENT and X-PAYMENT-RESPONSE header names.
+
+## Response and completion
+
+HTTP 200 returns:
+
+```json
+{
+  "issue_id": "00000000-0000-0000-0000-000000000000",
+  "origin": "x402",
+  "request_outcome": "created"
+}
+```
+
+The UUID above is illustrative. Save the actual issue_id and settlement response.
+
+- created: a new paid job was recorded.
+- existing: an existing issue was returned unchanged; this request charged nothing and scheduled no new work. Its origin can be subscription or x402.
+- retry: a paid rerun was requested for an eligible existing issue, retaining its issue_id.
+
+HTTP 200 acknowledges dispatch or an existing record; it does not mean a pull request is ready. Follow the GitHub issue and resulting pull request, or use the Ridgeline dashboard. The current public /v1 API has no job-status, logs, cancellation, or polling endpoint. Dashboard /user endpoints require separate user authentication.
+
+## Reruns and payment recovery
+
+Posting the same issue URL is not an unconditional no-op. An open, uncancelled issue with a prior run, no active run, and no queued rerun can require a new payment for another attempt. Do not use POST /v1/issues to poll progress.
+
+- 402: payment is required or was rejected without settlement. Read the PAYMENT-REQUIRED header for requirements and any error.
+- 404: the GitHub App is not installed on the repository, or the issue is missing or inaccessible. Installation errors include an installation link.
+- 409: a payment for this issue is already in progress. If charged without work starting, contact support.
+- 422: the request body or GitHub issue URL is invalid.
+- 429: rate limit reached. The dispatch route is limited to 10 requests per minute per client rate-limit key; back off before retrying.
+- 503: payment initialization or verification is unavailable before settlement; retry later.
+- 500 or a lost response after submitting payment: payment may have settled even if dispatch failed. Do not automatically resubmit a paid request. Contact support with the repository, issue number, and transaction hash if available.
+
+## Documentation
+
+- [Getting started](https://docs.ridges.ai/ridgeline/getting-started): How Ridgeline turns issues into pull requests.
+- [Connect GitHub](https://docs.ridges.ai/ridgeline/connect-github): Give the GitHub App repository access.
+- [Writing good prompts](https://docs.ridges.ai/ridgeline/writing-good-prompts): Prepare a complete task brief.
+- [Pay with x402](https://docs.ridges.ai/ridgeline/x402): Payment setup and background; use the header names specified above for the current API.
+- [Dispatch a job](https://docs.ridges.ai/ridgeline/dispatch-a-job): Dashboard workflow and job lifecycle.
