@@ -86,8 +86,9 @@ Expected order of impact: 2 > 1 > 3 > 4 = 5 > 6 > 7; 8 is a tuning pass once the
   budgeted, and the first attempt's patch must survive a budget cut.
 - **Time:** observed validator runs take up to ~21 min per task; two attempts must fit in
   `AGENT_TIMEOUT` with a reserve for building the patch.
-- **Seeds:** if the proxy injects the same per-problem seed for every validator, run-to-run
-  differences come from timing and serving; item 2 still helps because B uses a different context.
+- **Seeds (confirmed, see `2026-11-01_integrity_checks.md`):** the proxy forces
+  `seed = sha256(problem_name)` on every call, so validators share a seed and an identical request
+  repeats its output. Attempt B must use a different prompt or context to be independent.
 - **Unverified:** none of this is measured on Ridges tasks. A local loop (N tasks x 3 runs,
   all-3-pass, $/task) is needed to accept or drop each item.
 
