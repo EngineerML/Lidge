@@ -1,0 +1,18 @@
+[submodule "research/repos/ridges"]
+	path = research/repos/ridges
+	url = https://github.com/ridgesai/ridges.git
+[submodule "research/repos/ridges-bench"]
+	path = research/repos/ridges-bench
+	url = https://github.com/ridgesai/ridges-bench.git
+[submodule "research/repos/sandbox-proxy"]
+	path = research/repos/sandbox-proxy
+	url = https://github.com/ridgesai/sandbox-proxy.git
+[submodule "research/repos/ridgeline_mcp"]
+	path = research/repos/ridgeline_mcp
+	url = https://github.com/ridgesai/ridgeline_mcp.git
+[submodule "research/repos/abstract-agent-runner"]
+	path = research/repos/abstract-agent-runner
+	url = https://github.com/ridgesai/abstract-agent-runner.git
+[submodule "research/repos/cave"]
+	path = research/repos/cave
+	url = https://github.com/ridgesai/cave.git
