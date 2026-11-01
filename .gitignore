@@ -12,3 +12,6 @@ __pycache__/
 .ruff_cache/
 *.log
 *.tmp
+
+# other miners' agent code, re-downloadable; untrusted, never run
+research/released/**/agent.py
